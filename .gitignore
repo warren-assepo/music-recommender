@@ -1,5 +1,5 @@
 venv/
-*.csv
+spotify-tracks-dataset.csv
 __pycache__/
 .env
 .DS_Store
