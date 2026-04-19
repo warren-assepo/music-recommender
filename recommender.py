@@ -1,9 +1,8 @@
 import pandas as pd
 from sklearn.metrics.pairwise import cosine_similarity
-
+from prepare_data import features
 df = pd.read_csv("spotify-tracks-dataset-cleaned.csv") #Récupérer les données de notre nouveau fichier
-print(df.head())
-features = ['danceability', 'energy', 'loudness', 'key', 'mode', 'speechiness', 'acousticness', 'instrumentalness', 'valence', 'tempo'] #Trier les colonnes qui nous intéresse pour notre algorithme
+
 "similarity_matrix = cosine_similarity(df[features]) #Matrice 113 999 x 113 999 (impossible à lancer)"
 
 def recommend (track_name):
