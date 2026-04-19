@@ -4,6 +4,31 @@ import plotly.graph_objects as go
 
 st.title("Music Recommender") #Titre de la page
 
+st.markdown("##### 🎵 Découvre des sons similaires basés sur les features audio Spotify") 
+
+st.markdown("""
+<style>
+    .stApp {
+        background-color: #121212;
+    }
+    .stSelectbox label {
+        color: #1DB954 !important;
+        font-weight: bold;
+    }
+    .stMarkdown a {
+        color: #1DB954 !important;
+        text-decoration: none;
+        font-size: 16px;
+    }
+    .stMarkdown a:hover {
+        color: white !important;
+    }
+    h1 {
+        color: white !important;
+    }
+</style>
+""", unsafe_allow_html=True) #Ajout de style avec du CSS
+
 track_genre = st.selectbox("Choisis le genre musical",[""] + list(df['track_genre'].unique())) #Saisit du genre par l'utilisateur
 df_filtered_track_genre = df[df['track_genre'] == track_genre] if track_genre else df #On filtre notre data set par rapport au genre sélectionné
 
