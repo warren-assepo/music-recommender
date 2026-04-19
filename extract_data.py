@@ -24,6 +24,6 @@ def get_tracks_from_playlist(playlist_id):
             })
     return tracks
 
-tracks = get_tracks_from_playlist("37i9dQZEVXbIPWwFssbupI")
+tracks = get_tracks_from_playlist("ton_client_secret")
 print(f"{len(tracks)} tracks récupérées")
 print(tracks[0])
