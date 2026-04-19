@@ -33,9 +33,15 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 
+## Limitations
+- The recommendation quality is evaluated qualitatively — without user feedback data (clicks, listening history), it is difficult to measure performance objectively with standard metrics
+- The dataset is static (Kaggle, 2023) — new releases are not included
+- Songs not in the dataset cannot be recommended
+
 ## Future improvements
 - Integrate the Spotify API for a real-time catalog
 - Add a user feedback system to improve recommendations
+- Compare cosine similarity with K-Means clustering approach using user feedback data
 
 
 ## Author
