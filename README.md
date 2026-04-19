@@ -15,7 +15,10 @@ Web application that recommends 5 similar songs based on Spotify audio features 
 ## How it works
 1. Selected relevant audio features (danceability, energy, loudness, speechiness, acousticness, instrumentalness, valence, tempo, key, mode)
 2. Cleaned the dataset: removed empty rows, duplicate tracks, and standardized all features using StandardScaler
-3. For each song searched, computed cosine similarity between that song and all others in the dataset to find the 5 most similar tracks
+3. Filter songs by genre and artist before searching
+4. Autocomplete search with song name and artist to avoid confusion between songs with the same title
+5. Computed cosine similarity between the selected song and all others to find the 5 most similar tracks
+6. Each recommendation includes a clickable Spotify link and a radar chart of the audio features
 
 ## Dataset
 Spotify Tracks Dataset from Kaggle — 83,000+ unique tracks after cleaning
@@ -32,8 +35,8 @@ streamlit run app.py
 
 ## Future improvements
 - Integrate the Spotify API for a real-time catalog
-- Allow search by artist + title to avoid song name conflicts
-- Add a radar chart of audio features for each recommendation
+- Add a user feedback system to improve recommendations
+
 
 ## Author
 Warren ASSEPO — [LinkedIn](https://www.linkedin.com/in/warren-assepo/)
