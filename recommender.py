@@ -1,7 +1,9 @@
 import pandas as pd
 from sklearn.metrics.pairwise import cosine_similarity
-from prepare_data import features
+
 df = pd.read_csv("spotify-tracks-dataset-cleaned.csv") #Récupérer les données de notre nouveau fichier
+
+features = ['danceability', 'energy', 'loudness', 'key', 'mode', 'speechiness', 'acousticness', 'instrumentalness', 'valence', 'tempo']
 
 "similarity_matrix = cosine_similarity(df[features]) #Matrice 113 999 x 113 999 (impossible à lancer)"
 
@@ -11,7 +13,7 @@ def recommend (track_name):
     
     idx = df[df['track_name'].str.lower() == track_name.lower()].index[0]#Récupère l'index de la track (récupère que la première track en cas de doublon)
     features_track = df.iloc[idx][features] #Récupère uniquement les features audio d'une ligne
-    
+
     similarity_vector = cosine_similarity(features_track.values.reshape(1, -1), df[features]) #Fais le calcul de similarité pour une ligne (on a reshape la ligne pour qu'elle soit converti en tableau 2D et utilsable pour la fonction cosine_similarity())
     best_score = similarity_vector[0].argsort()[-6:][::-1] #Trouver les 5 score les plus élevés et les stocker
     best_score = [i for i in best_score if i != idx][:5] 
