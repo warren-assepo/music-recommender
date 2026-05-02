@@ -1,6 +1,9 @@
-from recommender import recommend, df, features
+from recommender import recommend, df, features_enrichies
 import streamlit as st
 import plotly.graph_objects as go
+from spotify_api import get_track_info, get_token
+
+token = get_token()
 
 st.title("Music Recommender") #Titre de la page
 
@@ -50,14 +53,28 @@ if track_name : #Vérifier si le son saisit n'est pas nul
     else:
         results, scores = result
         track_data = df[df['track_name'].str.lower() == track_name.lower()].iloc[0]
+        info_entree = get_track_info(token, track_name, track_data['artists'])
+        if info_entree:
+            col1, col2 = st.columns([1, 4])
+            with col1:
+                st.image(info_entree['image'], width=60)
+            with col2:
+                st.markdown(f"**[{track_name} - {track_data['artists']}]({info_entree['url']})**")
         for idx, row in results.iterrows():
             spotify_url = f"https://open.spotify.com/search/{row['track_name']}%20{row['artists']}".replace(" ", "%20")
-            st.markdown(f"[{row['track_name']} - {row['artists']}]({spotify_url})") #Afficher les 5 chansons les plus similaires et leur lien sur spotify
+            info = get_track_info(token, row['track_name'], row['artists'])
+            if info:
+                col1, col2 = st.columns([1, 4])
+                with col1:
+                    st.image(info['image'], width=60)
+                with col2:
+                    st.markdown(f"[{row['track_name']} - {row['artists']}]({info['url']})")
     
-    #Affiche un radar chart pour mieux comprendre les similarités        
+    #Affiche un radar chart pour mieux comprendre les similarités   
+    radar_data = (track_data[features_enrichies] - track_data[features_enrichies].min()) / (track_data[features_enrichies].max() - track_data[features_enrichies].min())
     fig = go.Figure(go.Scatterpolar(
-        r=track_data[features].values,
-        theta=features,
+        r=radar_data.values,
+        theta=features_enrichies,
         fill='toself'
     ))
 

@@ -1,9 +1,13 @@
 import pandas as pd
 from sklearn.metrics.pairwise import cosine_similarity
 
-df = pd.read_csv("spotify-tracks-dataset-cleaned.csv") #Récupérer les données de notre nouveau fichier
+#df = pd.read_csv("spotify-tracks-dataset-cleaned.csv") #Récupérer les données de notre nouveau fichier
+df = pd.read_csv("spotify-tracks-dataset-enriched.csv") 
 
-features = ['danceability', 'energy', 'loudness', 'key', 'mode', 'speechiness', 'acousticness', 'instrumentalness', 'valence', 'tempo']
+
+#features = ['danceability', 'energy', 'loudness', 'key', 'mode', 'speechiness', 'acousticness', 'instrumentalness', 'valence', 'tempo']
+features_enrichies = ['danceability', 'energy', 'loudness', 'key', 'mode', 'speechiness', 'acousticness', 'instrumentalness', 'valence', 'mood_euphoria', 'mood_chill', 'mood_sombre', 'mood_dansant', 'groove_score', 'vocal_ratio', 'tempo_sin', 'tempo_cos', 'acoustic_instrumental'] #Trier les colonnes qui nous intéresse pour notre algorithme
+
 
 "similarity_matrix = cosine_similarity(df[features]) #Matrice 113 999 x 113 999 (impossible à lancer)"
 
@@ -12,9 +16,9 @@ def recommend (track_name):
         return None
     
     idx = df[df['track_name'].str.lower() == track_name.lower()].index[0]#Récupère l'index de la track (récupère que la première track en cas de doublon)
-    features_track = df.iloc[idx][features] #Récupère uniquement les features audio d'une ligne
+    features_track = df.iloc[idx][features_enrichies] #Récupère uniquement les features audio d'une ligne
 
-    similarity_vector = cosine_similarity(features_track.values.reshape(1, -1), df[features]) #Fais le calcul de similarité pour une ligne (on a reshape la ligne pour qu'elle soit converti en tableau 2D et utilsable pour la fonction cosine_similarity())
+    similarity_vector = cosine_similarity(features_track.values.reshape(1, -1), df[features_enrichies]) #Fais le calcul de similarité pour une ligne (on a reshape la ligne pour qu'elle soit converti en tableau 2D et utilsable pour la fonction cosine_similarity())
     best_score = similarity_vector[0].argsort()[-6:][::-1] #Trouver les 5 score les plus élevés et les stocker
     best_score = [i for i in best_score if i != idx][:5] 
 
