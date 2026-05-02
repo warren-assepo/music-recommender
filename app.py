@@ -4,6 +4,7 @@ import plotly.graph_objects as go
 from spotify_api import get_track_info, get_token
 from evaluation import recommend_cosine, recommend_knn, recommend_kmeans
 
+
 def calculer_score_musical(historique):
     if len(historique) < 2:
         return None
@@ -81,11 +82,17 @@ else:
     
 autocomplete = st.selectbox("Tape le nom d'une chanson", options) #Propose des choix à l'utilsateur (valeur initiale nulle)
 track_name = autocomplete.split(" - ")[0] 
+modele_choisi = st.selectbox("🤖 Choisis le modèle de recommandation", ["Cosinus", "KNN", "K-Means"])
 
 if "historique" not in st.session_state:
     st.session_state.historique = []
 if track_name : #Vérifier si le son saisit n'est pas nul
-    result = recommend(track_name) 
+    if modele_choisi == "Cosinus":
+        result = recommend_cosine(track_name)
+    elif modele_choisi == "KNN":
+        result = recommend_knn(track_name)
+    else:
+        result = recommend_kmeans(track_name) 
     if result is None:
         st.error("Chanson non trouvée dans le dataset 😕")  #Si le son ne fait pas partie de la dataset le signaler à l'utilsateur
     else:
