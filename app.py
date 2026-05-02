@@ -2,6 +2,7 @@ from recommender import recommend, df, features_enrichies
 import streamlit as st
 import plotly.graph_objects as go
 from spotify_api import get_track_info, get_token
+from evaluation import recommend_cosine, recommend_knn, recommend_kmeans
 
 def calculer_score_musical(historique):
     if len(historique) < 2:
@@ -35,7 +36,14 @@ token = get_token()
 
 st.title("Music Recommender") #Titre de la page
 
+
 st.markdown("##### 🎵 Découvre des sons similaires basés sur les features audio Spotify") 
+
+col1, col2, col3, col4 = st.columns(4)
+col1.metric("🎵 Tracks analysées", f"{len(df):,}")
+col2.metric("🎭 Genres couverts", df['track_genre'].nunique())
+col3.metric("🤖 Modèles disponibles", "3")
+col4.metric("📊 Features audio", len(features_enrichies))
 
 st.markdown("""
 <style>
@@ -110,9 +118,24 @@ if track_name : #Vérifier si le son saisit n'est pas nul
         fill='toself'
     ))
 
-    st.plotly_chart(fig)
+    st.plotly_chart(fig) #Affichage de session
 
-    if len(st.session_state.historique) >= 2:
+    if st.button("🔬 Comparer les 3 modèles"):
+        with st.spinner("Comparaison en cours..."):
+            modeles = {
+                "Cosinus": recommend_cosine,
+                "KNN": recommend_knn,
+                "K-Means": recommend_kmeans
+            }
+            for nom, fn in modeles.items():
+                result_modele = fn(track_name)
+                if result_modele:
+                    recs, _ = result_modele
+                    st.markdown(f"**{nom}**")
+                    for _, row in recs.iterrows():
+                        st.markdown(f"• {row['track_name']} — {row['artists']}")
+
+    if len(st.session_state.historique) >= 2: #Score de session
         score = calculer_score_musical(st.session_state.historique)
         st.markdown("---")
         st.markdown("### 🎵 Score de ta session")

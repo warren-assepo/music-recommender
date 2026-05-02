@@ -98,9 +98,6 @@ def calculer_similarite_moyenne(idx_entree, indices):
     similarity_vector = cosine_similarity(features_entree.values.reshape(1, -1), df.iloc[indices][features_enrichies])
     return similarity_vector[0].mean()
 
-df_results = evaluate()
-df_avg = df_results.groupby("modèle")[["sim_moy", "diversité", "overlap"]].mean()
-df_norm = (df_avg - df_avg.min()) / (df_avg.max() - df_avg.min())
 
 def visualiser(): #Visualisation
     fig = go.Figure(data=[go.Scatterpolar(
@@ -141,5 +138,9 @@ def visualiser_bar():
     )])
     fig.show()
 
-print(df_avg)
-visualiser_bar()
+if __name__ == "__main__":
+    df_results = evaluate()
+    df_avg = df_results.groupby("modèle")[["sim_moy", "diversité", "overlap"]].mean()
+    df_norm = (df_avg - df_avg.min()) / (df_avg.max() - df_avg.min())
+    print(df_avg)
+    visualiser_bar()
