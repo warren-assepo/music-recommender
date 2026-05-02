@@ -1,5 +1,12 @@
+streamlit
 pandas
 scikit-learn
-streamlit
 plotly
+rapidfuzz
+flask
+flask-cors
 python-dotenv
+requests
+numpy
+anthropic
+gunicorn

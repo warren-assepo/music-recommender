@@ -1,0 +1,1569 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Music Recommender</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root {
+  --green: #1DB954;
+  --green-glow: rgba(29,185,84,0.15);
+  --black: #0a0a0a;
+  --card: #111111;
+  --card2: #161616;
+  --border: #222222;
+  --text: #e8e8e8;
+  --muted: #555;
+  --muted2: #888;
+  --radius: 12px;
+  --nav-h: 64px;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--black);
+  color: var(--text);
+  font-family: 'Syne', sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── NAV ── */
+nav {
+  position: fixed; top:0; left:0; right:0; z-index:200;
+  height: var(--nav-h);
+  background: rgba(10,10,10,0.92);
+  backdrop-filter: blur(24px);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 48px;
+}
+.nav-logo {
+  font-size: 1rem; font-weight: 800;
+  letter-spacing: 0.04em;
+  color: var(--text);
+}
+.nav-logo span { color: var(--green); }
+.nav-tabs { display: flex; gap: 4px; }
+.nav-tab {
+  background: transparent; border: none;
+  color: var(--muted2);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase;
+  padding: 8px 18px; border-radius: 100px;
+  cursor: pointer; transition: all 0.2s;
+}
+.nav-tab:hover { color: var(--text); }
+.nav-tab.active { background: var(--card2); color: var(--green); border: 1px solid var(--border); }
+.nav-kpis { display: flex; gap: 28px; }
+.kpi-item { text-align: center; }
+.kpi-v { font-family: 'JetBrains Mono', monospace; font-size: 0.9rem; color: var(--green); font-weight: 500; }
+.kpi-l { font-size: 0.58rem; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; margin-top: 1px; }
+
+/* ── SECTIONS ── */
+.section { display: none; min-height: 100vh; padding-top: var(--nav-h); }
+.section.active { display: block; }
+
+/* ═══════════════════════════════
+   SECTION HOME
+═══════════════════════════════ */
+.hero {
+  padding: 80px 48px 60px;
+  max-width: 1100px; margin: 0 auto;
+}
+.hero-tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem; color: var(--green);
+  letter-spacing: 0.2em; text-transform: uppercase;
+  margin-bottom: 20px;
+  opacity: 0; animation: fadeUp 0.5s ease 0.1s forwards;
+}
+.hero-title {
+  font-size: clamp(2.8rem, 6vw, 5.5rem);
+  font-weight: 800; line-height: 0.92;
+  letter-spacing: -0.03em; margin-bottom: 24px;
+  opacity: 0; animation: fadeUp 0.5s ease 0.2s forwards;
+}
+.hero-title .g { color: var(--green); }
+.hero-desc {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.8rem; color: var(--muted2);
+  line-height: 1.7; max-width: 520px; margin-bottom: 48px;
+  opacity: 0; animation: fadeUp 0.5s ease 0.3s forwards;
+}
+.hero-desc strong { color: var(--green); font-weight: 500; }
+
+/* SEARCH AREA */
+.search-area {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 16px; padding: 28px;
+  opacity: 0; animation: fadeUp 0.5s ease 0.4s forwards;
+}
+.filter-row {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+  margin-bottom: 12px;
+}
+.filter-select {
+  background: var(--black); border: 1px solid var(--border);
+  color: var(--text); font-family: 'Syne', sans-serif; font-size: 0.85rem;
+  padding: 12px 16px; border-radius: 8px; outline: none;
+  cursor: pointer; transition: border-color 0.2s;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23555' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 12px center;
+  padding-right: 32px;
+}
+.filter-select:focus { border-color: var(--green); }
+.filter-select option { background: #1a1a1a; }
+.search-row { display: flex; gap: 10px; margin-bottom: 16px; }
+.search-input {
+  flex: 1; background: var(--black); border: 1px solid var(--border);
+  color: var(--text); font-family: 'Syne', sans-serif; font-size: 0.95rem;
+  padding: 14px 18px; border-radius: 8px; outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.search-input:focus {
+  border-color: var(--green);
+  box-shadow: 0 0 0 3px var(--green-glow);
+}
+.search-input::placeholder { color: var(--muted); }
+
+/* AUTOCOMPLETE */
+.search-wrapper { position: relative; flex: 1; }
+.autocomplete-list {
+  position: absolute; top: calc(100% + 6px); left: 0; right: 0;
+  background: #161616; border: 1px solid var(--border);
+  border-radius: 10px; z-index: 100;
+  overflow: hidden; display: none;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+}
+.autocomplete-list.open { display: block; }
+.autocomplete-item {
+  padding: 12px 16px; cursor: pointer;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  transition: background 0.15s;
+}
+.autocomplete-item:last-child { border-bottom: none; }
+.autocomplete-item:hover { background: rgba(29,185,84,0.08); }
+.ac-track { font-size: 0.85rem; font-weight: 600; margin-bottom: 2px; }
+.ac-artist { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; color: var(--muted2); }
+.ac-highlight { color: var(--green); }
+.btn-search {
+  background: var(--green); color: #000;
+  border: none; font-family: 'Syne', sans-serif;
+  font-weight: 700; font-size: 0.8rem;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  padding: 14px 24px; border-radius: 8px;
+  cursor: pointer; transition: all 0.2s; white-space: nowrap;
+}
+.btn-search:hover { background: #1ed760; }
+.btn-search:active { transform: scale(0.97); }
+.model-row { display: flex; align-items: center; gap: 8px; }
+.model-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.62rem; color: var(--muted);
+  letter-spacing: 0.1em; text-transform: uppercase; margin-right: 4px;
+}
+.model-pill {
+  background: transparent; border: 1px solid var(--border);
+  color: var(--muted2); font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem; letter-spacing: 0.06em; text-transform: uppercase;
+  padding: 6px 14px; border-radius: 100px;
+  cursor: pointer; transition: all 0.2s;
+}
+.model-pill:hover { border-color: var(--green); color: var(--green); }
+.model-pill.active { background: var(--green); border-color: var(--green); color: #000; font-weight: 600; }
+.btn-compare {
+  margin-left: auto;
+  background: transparent; border: 1px solid var(--border);
+  color: var(--muted2); font-family: 'JetBrains Mono', monospace;
+  font-size: 0.62rem; letter-spacing: 0.06em; text-transform: uppercase;
+  padding: 6px 14px; border-radius: 100px;
+  cursor: pointer; transition: all 0.2s;
+}
+.btn-compare:hover { border-color: var(--text); color: var(--text); }
+
+/* RESULTS */
+.results-wrap {
+  max-width: 1100px; margin: 0 auto; padding: 0 48px 80px;
+}
+.state-empty { text-align: center; padding: 100px 0; color: var(--muted); }
+.state-empty-icon { font-size: 3rem; opacity: 0.3; margin-bottom: 16px; }
+.state-empty-text { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; }
+.loading-wrap {
+  display: flex; align-items: center; gap: 12px;
+  padding: 60px 0; font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem; color: var(--muted);
+}
+.spinner {
+  width: 18px; height: 18px; border: 2px solid var(--border);
+  border-top-color: var(--green); border-radius: 50%;
+  animation: spin 0.7s linear infinite; flex-shrink: 0;
+}
+.err-box {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.78rem;
+  color: #e05260; padding: 16px 20px;
+  background: rgba(224,82,96,0.07); border: 1px solid rgba(224,82,96,0.2);
+  border-radius: 8px; margin-top: 24px;
+}
+/* Input track card */
+.input-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px 24px;
+  display: flex; align-items: center; gap: 18px;
+  margin: 32px 0 24px;
+  opacity: 0; animation: fadeUp 0.4s ease forwards;
+}
+.input-card-cover {
+  width: 64px; height: 64px; border-radius: 8px;
+  overflow: hidden; flex-shrink: 0; background: var(--border);
+}
+.input-card-cover img { width:100%; height:100%; object-fit:cover; }
+.cover-ph {
+  width:100%; height:100%; display:flex; align-items:center;
+  justify-content:center; color: var(--muted); font-size: 1.4rem;
+}
+.input-card-info { flex: 1; min-width:0; }
+.input-card-tag {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.58rem;
+  color: var(--green); letter-spacing: 0.15em; text-transform: uppercase;
+  margin-bottom: 5px;
+}
+.input-card-name { font-size: 1.05rem; font-weight: 700; margin-bottom: 3px; }
+.input-card-artist {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem; color: var(--muted2);
+}
+.input-card-link {
+  flex-shrink: 0;
+}
+.sp-link {
+  display: flex; align-items:center; gap:6px;
+  text-decoration: none; color: var(--muted2);
+  font-family: 'JetBrains Mono', monospace; font-size: 0.62rem;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  border: 1px solid var(--border); padding: 7px 14px; border-radius: 100px;
+  transition: all 0.2s;
+}
+.sp-link:hover { color: var(--green); border-color: var(--green); }
+
+/* Section header for results */
+.results-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 8px;
+}
+.results-title {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.65rem;
+  color: var(--muted); letter-spacing: 0.15em; text-transform: uppercase;
+}
+.model-tag {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.6rem;
+  color: var(--green); letter-spacing: 0.08em; text-transform: uppercase;
+  background: var(--green-glow); padding: 4px 10px;
+  border-radius: 100px; border: 1px solid rgba(29,185,84,0.25);
+}
+
+/* Track list */
+.track-list { display: flex; flex-direction: column; }
+.track-row {
+  display: flex; align-items: center; gap: 18px;
+  padding: 14px 0; border-bottom: 1px solid rgba(255,255,255,0.04);
+  transition: background 0.15s; cursor: default;
+  opacity: 0; animation: fadeUp 0.35s ease forwards;
+}
+.track-row:hover { padding-left: 6px; background: rgba(255,255,255,0.02); border-radius: 8px; border-color: transparent; }
+.track-num {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.72rem;
+  color: var(--muted); width: 22px; text-align: right; flex-shrink:0;
+}
+.track-cover {
+  width: 44px; height: 44px; border-radius: 6px;
+  overflow: hidden; flex-shrink: 0; background: var(--border);
+}
+.track-cover img { width:100%; height:100%; object-fit:cover; }
+.track-info { flex:1; min-width:0; }
+.track-name { font-size: 0.9rem; font-weight: 600; margin-bottom: 2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.track-artist { font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; color: var(--muted2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.track-sp { flex-shrink:0; }
+
+/* RADAR CHART */
+.radar-wrap {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 28px;
+  margin-top: 40px;
+  opacity: 0; animation: fadeUp 0.4s ease 0.2s forwards;
+}
+.radar-title {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.65rem;
+  color: var(--muted); letter-spacing: 0.15em; text-transform: uppercase;
+  margin-bottom: 24px;
+}
+.radar-canvas-wrap { max-width: 380px; margin: 0 auto; }
+
+/* COMPARE GRID */
+.compare-wrap { margin-top: 40px; }
+.compare-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
+  margin-top: 16px;
+}
+.compare-col {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px;
+}
+.compare-col-head {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.62rem;
+  color: var(--green); letter-spacing: 0.12em; text-transform: uppercase;
+  margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid var(--border);
+}
+.compare-track { padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
+.compare-track:last-child { border-bottom: none; }
+.compare-track-name { font-size: 0.78rem; font-weight: 600; margin-bottom: 2px; }
+.compare-track-artist { font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; color: var(--muted2); }
+
+/* SESSION SCORE */
+.score-wrap {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 28px;
+  margin-top: 40px;
+}
+.score-title {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.65rem;
+  color: var(--muted); letter-spacing: 0.15em; text-transform: uppercase;
+  margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between;
+}
+.score-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;
+}
+.score-card {
+  background: var(--card2); border: 1px solid var(--border);
+  border-radius: 10px; padding: 20px 16px; text-align: center;
+  transition: border-color 0.2s;
+}
+.score-card:hover { border-color: var(--green); }
+.score-card-lbl {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.58rem;
+  color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase;
+  margin-bottom: 10px;
+}
+.score-card-val { font-size: 2.4rem; font-weight: 800; color: var(--green); line-height: 1; }
+.score-card-val.main { color: var(--text); font-size: 2.8rem; }
+.score-card-unit { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; color: var(--muted); margin-top: 4px; }
+.btn-reset-session {
+  background: transparent; border: 1px solid var(--border);
+  color: var(--muted); font-family: 'JetBrains Mono', monospace;
+  font-size: 0.6rem; letter-spacing: 0.08em; text-transform: uppercase;
+  padding: 5px 12px; border-radius: 100px; cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-reset-session:hover { border-color: #e05260; color: #e05260; }
+
+/* ═══════════════════════════════
+   SECTION MODÈLES
+═══════════════════════════════ */
+.models-page {
+  max-width: 1100px; margin: 0 auto;
+  padding: 60px 48px 80px;
+}
+.page-header { margin-bottom: 48px; }
+.page-eyebrow {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.65rem;
+  color: var(--green); letter-spacing: 0.2em; text-transform: uppercase;
+  margin-bottom: 12px;
+}
+.page-title { font-size: 2.5rem; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 12px; }
+.page-sub { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--muted2); line-height: 1.6; }
+
+/* model cards */
+.models-intro-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
+  margin-bottom: 48px;
+}
+.model-intro-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 24px;
+  transition: border-color 0.2s;
+}
+.model-intro-card:hover { border-color: var(--green); }
+.model-intro-name {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.65rem;
+  color: var(--green); letter-spacing: 0.12em; text-transform: uppercase;
+  margin-bottom: 10px;
+}
+.model-intro-title { font-size: 1rem; font-weight: 700; margin-bottom: 10px; }
+.model-intro-desc { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: var(--muted2); line-height: 1.6; }
+
+/* evaluation results */
+.eval-section { margin-bottom: 48px; }
+.eval-title {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.65rem;
+  color: var(--muted); letter-spacing: 0.15em; text-transform: uppercase;
+  margin-bottom: 24px;
+}
+.eval-chart-grid {
+  display: grid; grid-template-columns: 2fr 1fr; gap: 24px;
+  align-items: start;
+}
+.chart-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 24px;
+}
+.chart-card-title {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.62rem;
+  color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase;
+  margin-bottom: 20px;
+}
+.eval-table-wrap {
+  overflow: hidden; border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
+.eval-table { width: 100%; border-collapse: collapse; }
+.eval-table th {
+  background: var(--card2); font-family: 'JetBrains Mono', monospace;
+  font-size: 0.6rem; color: var(--muted); letter-spacing: 0.1em;
+  text-transform: uppercase; padding: 12px 16px; text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+.eval-table td {
+  padding: 14px 16px; font-family: 'JetBrains Mono', monospace;
+  font-size: 0.78rem; border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.eval-table tr:last-child td { border-bottom: none; }
+.eval-table tr:hover td { background: rgba(255,255,255,0.02); }
+.badge-model {
+  display: inline-block; padding: 3px 8px; border-radius: 100px;
+  font-size: 0.62rem; font-weight: 600; letter-spacing: 0.05em;
+}
+.badge-cosine { background: rgba(29,185,84,0.15); color: var(--green); }
+.badge-knn { background: rgba(100,160,255,0.15); color: #64a0ff; }
+.badge-kmeans { background: rgba(255,160,60,0.15); color: #ffa03c; }
+.val-green { color: var(--green); font-weight: 600; }
+.val-muted { color: var(--muted2); }
+
+/* ═══════════════════════════════
+   SECTION CHAT IA
+═══════════════════════════════ */
+.chat-page {
+  max-width: 800px; margin: 0 auto;
+  padding: 60px 48px 0;
+  display: flex; flex-direction: column; height: calc(100vh - var(--nav-h));
+}
+.chat-header { margin-bottom: 32px; flex-shrink: 0; }
+.chat-messages {
+  flex: 1; overflow-y: auto; padding-right: 4px;
+  display: flex; flex-direction: column; gap: 16px;
+  padding-bottom: 24px;
+}
+.chat-messages::-webkit-scrollbar { width: 3px; }
+.chat-messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+.msg {
+  display: flex; gap: 12px; align-items: flex-start;
+  opacity: 0; animation: fadeUp 0.3s ease forwards;
+}
+.msg.user { flex-direction: row-reverse; }
+.msg-avatar {
+  width: 32px; height: 32px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.8rem; flex-shrink: 0;
+}
+.msg.ai .msg-avatar { background: var(--green-glow); color: var(--green); border: 1px solid rgba(29,185,84,0.3); }
+.msg.user .msg-avatar { background: var(--card2); color: var(--text); border: 1px solid var(--border); }
+.msg-bubble {
+  max-width: 80%; padding: 14px 18px; border-radius: 12px;
+  font-size: 0.88rem; line-height: 1.65;
+}
+.msg.ai .msg-bubble {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 12px 12px 12px 4px;
+}
+.msg.user .msg-bubble {
+  background: var(--green); color: #000;
+  border-radius: 12px 12px 4px 12px;
+  font-weight: 500;
+}
+.msg-bubble a.song-link {
+  display: inline-block;
+  background: rgba(29,185,84,0.1); color: var(--green);
+  border: 1px solid rgba(29,185,84,0.3);
+  text-decoration: none; padding: 2px 10px; border-radius: 100px;
+  font-family: 'JetBrains Mono', monospace; font-size: 0.72rem;
+  cursor: pointer; transition: all 0.2s; margin: 2px 2px;
+}
+.msg-bubble a.song-link:hover { background: var(--green); color: #000; }
+
+.chat-input-area {
+  flex-shrink: 0; padding: 20px 0 32px;
+  border-top: 1px solid var(--border);
+}
+.chat-input-row { display: flex; gap: 10px; }
+.chat-input {
+  flex: 1; background: var(--card); border: 1px solid var(--border);
+  color: var(--text); font-family: 'Syne', sans-serif; font-size: 0.9rem;
+  padding: 14px 18px; border-radius: 10px; outline: none;
+  transition: border-color 0.2s;
+  resize: none;
+}
+.chat-input:focus { border-color: var(--green); }
+.chat-input::placeholder { color: var(--muted); }
+.btn-send {
+  background: var(--green); color: #000; border: none;
+  font-family: 'Syne', sans-serif; font-weight: 700;
+  font-size: 0.8rem; padding: 14px 20px; border-radius: 10px;
+  cursor: pointer; transition: all 0.2s; align-self: flex-end;
+}
+.btn-send:hover { background: #1ed760; }
+.btn-send:disabled { opacity: 0.5; cursor: not-allowed; }
+.chat-hint {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.62rem;
+  color: var(--muted); margin-top: 10px; line-height: 1.5;
+}
+.typing-dots { display: inline-flex; gap: 4px; align-items: center; }
+.typing-dots span {
+  width: 6px; height: 6px; background: var(--muted);
+  border-radius: 50%; animation: blink 1.2s infinite;
+}
+.typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+.typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+/* UTILS */
+.hidden { display: none !important; }
+.divider { border: none; border-top: 1px solid var(--border); margin: 0; }
+
+@keyframes fadeUp {
+  from { opacity:0; transform: translateY(12px); }
+  to { opacity:1; transform: translateY(0); }
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes blink {
+  0%, 80%, 100% { opacity: 0.3; transform: scale(0.9); }
+  40% { opacity: 1; transform: scale(1); }
+}
+
+@media (max-width: 768px) {
+  nav { padding: 0 20px; }
+  .nav-kpis { display: none; }
+  .hero, .results-wrap, .models-page { padding-left: 20px; padding-right: 20px; }
+  .filter-row { grid-template-columns: 1fr; }
+  .score-grid { grid-template-columns: repeat(2, 1fr); }
+  .compare-grid, .models-intro-grid, .eval-chart-grid { grid-template-columns: 1fr; }
+  .chat-page { padding: 32px 20px 0; }
+}
+</style>
+</head>
+<body>
+
+<!-- ═══ NAV ═══ -->
+<nav>
+  <div class="nav-logo">Music <span>Recommender</span></div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="showSection('home')">Accueil</button>
+    <button class="nav-tab" onclick="showSection('models')">Modèles</button>
+    <button class="nav-tab" onclick="showSection('chat')">Chat IA</button>
+  </div>
+  <div class="nav-kpis">
+    <div class="kpi-item"><div class="kpi-v">81,343</div><div class="kpi-l">Tracks</div></div>
+    <div class="kpi-item"><div class="kpi-v">113</div><div class="kpi-l">Genres</div></div>
+    <div class="kpi-item"><div class="kpi-v">3</div><div class="kpi-l">Modèles</div></div>
+    <div class="kpi-item"><div class="kpi-v">18</div><div class="kpi-l">Features</div></div>
+  </div>
+</nav>
+
+<!-- ═══════════════════════════════════
+  SECTION HOME
+═══════════════════════════════════ -->
+<section class="section active" id="section-home">
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-tag">// Audio Feature Analysis · 81K Tracks</div>
+    <h1 class="hero-title">Trouve ton<br>prochain <span class="g">son.</span></h1>
+    <p class="hero-desc">
+      Entre le nom d'une chanson et découvre
+      <strong>5 titres similaires</strong> sélectionnés par nos algorithmes ML
+      — similarité cosinus, KNN, ou K-Means — basés sur <strong>18 features audio</strong> Spotify.
+    </p>
+
+    <!-- SEARCH AREA -->
+    <div class="search-area">
+      <!-- Filters -->
+      <div class="filter-row">
+        <select class="filter-select" id="genreSelect" onchange="loadArtists()">
+          <option value="">🎭 Tous les genres</option>
+        </select>
+        <select class="filter-select" id="artistSelect" onchange="loadTracks()">
+          <option value="">👤 Tous les artistes</option>
+        </select>
+      </div>
+      <!-- Search -->
+      <div class="search-row">
+        <div class="search-wrapper">
+          <input type="text" class="search-input" id="searchInput"
+            placeholder="Tape le nom d'une chanson... ex: Blinding Lights"
+            autocomplete="off"
+            oninput="onSearchInput()"
+            onkeydown="onSearchKeydown(event)" />
+          <div class="autocomplete-list" id="autocompleteList"></div>
+        </div>
+        <button class="btn-search" id="btnSearch" onclick="doSearch()">→ Rechercher</button>
+      </div>
+      <!-- Track selectbox — visible uniquement quand genre + artiste sont sélectionnés -->
+      <div class="search-row hidden" id="trackSelectRow">
+        <select class="search-input" id="trackSelect" onchange="pickTrack()" style="cursor:pointer;">
+          <option value="">🎵 Choisir une chanson...</option>
+        </select>
+      </div>
+      <!-- Models -->
+      <div class="model-row">
+        <span class="model-label">Modèle :</span>
+        <button class="model-pill active" data-model="cosine" onclick="pickModel(this)">Cosinus</button>
+        <button class="model-pill" data-model="knn" onclick="pickModel(this)">KNN</button>
+        <button class="model-pill" data-model="kmeans" onclick="pickModel(this)">K-Means</button>
+        <button class="btn-compare hidden" id="btnCompare" onclick="doCompare()">⊞ Comparer les 3</button>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- RESULTS -->
+  <div class="results-wrap">
+    <!-- States -->
+    <div id="stateEmpty" class="state-empty">
+      <div class="state-empty-icon">♫</div>
+      <div class="state-empty-text">Tape le nom d'une chanson pour commencer</div>
+    </div>
+    <div id="stateLoading" class="loading-wrap hidden">
+      <div class="spinner"></div>
+      Analyse des features audio...
+    </div>
+    <div id="stateError" class="err-box hidden"></div>
+
+    <!-- Content -->
+    <div id="resultsContent" class="hidden">
+      <!-- Input track -->
+      <div id="inputCard" class="input-card">
+        <div class="input-card-cover" id="inputCover">
+          <div class="cover-ph">♪</div>
+        </div>
+        <div class="input-card-info">
+          <div class="input-card-tag">// Chanson sélectionnée</div>
+          <div class="input-card-name" id="inputName">—</div>
+          <div class="input-card-artist" id="inputArtist">—</div>
+        </div>
+        <div class="input-card-link">
+          <a class="sp-link" id="inputSpLink" href="#" target="_blank">↗ Spotify</a>
+        </div>
+      </div>
+
+      <!-- Recommendations -->
+      <div class="results-header">
+        <div class="results-title" id="resultsTitle">// Recommandations</div>
+        <div class="model-tag" id="modelTag">Cosinus</div>
+      </div>
+      <div class="track-list" id="trackList"></div>
+
+      <!-- Radar -->
+      <div class="radar-wrap" id="radarWrap">
+        <div class="radar-title">// Profil audio — <span id="radarTrackName">—</span></div>
+        <div class="radar-canvas-wrap">
+          <canvas id="radarChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Compare -->
+      <div id="compareSection" class="compare-wrap hidden">
+        <div class="results-header">
+          <div class="results-title">// Comparaison des 3 modèles</div>
+        </div>
+        <div class="compare-grid" id="compareGrid"></div>
+      </div>
+    </div>
+
+    <!-- Session score -->
+    <div id="scoreWrap" class="score-wrap hidden">
+      <div class="score-title">
+        // Score de session
+        <button class="btn-reset-session" onclick="resetSession()">↺ Reset</button>
+      </div>
+      <div class="score-grid">
+        <div class="score-card">
+          <div class="score-card-lbl">Score global</div>
+          <div class="score-card-val main" id="scoreTotal">—</div>
+          <div class="score-card-unit">/100</div>
+        </div>
+        <div class="score-card">
+          <div class="score-card-lbl">🌈 Diversité</div>
+          <div class="score-card-val" id="scoreDiversite">—</div>
+          <div class="score-card-unit">%</div>
+        </div>
+        <div class="score-card">
+          <div class="score-card-lbl">⚖️ Équilibre</div>
+          <div class="score-card-val" id="scoreEquilibre">—</div>
+          <div class="score-card-unit">%</div>
+        </div>
+        <div class="score-card">
+          <div class="score-card-lbl">⚡ Variété</div>
+          <div class="score-card-val" id="scoreVariete">—</div>
+          <div class="score-card-unit">%</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════
+  SECTION MODÈLES
+═══════════════════════════════════ -->
+<section class="section" id="section-models">
+  <div class="models-page">
+    <div class="page-header">
+      <div class="page-eyebrow">// Évaluation des algorithmes ML</div>
+      <h2 class="page-title">Comparaison des modèles</h2>
+      <p class="page-sub">
+        Évaluation sur 8 chansons test avec 3 métriques proxy :<br>
+        similarité audio moyenne · diversité des genres · overlap Cosinus∩KNN
+      </p>
+    </div>
+
+    <!-- Model descriptions -->
+    <div class="models-intro-grid">
+      <div class="model-intro-card">
+        <div class="model-intro-name">01 — Cosinus</div>
+        <div class="model-intro-title">Similarité cosinus</div>
+        <div class="model-intro-desc">
+          Mesure l'angle entre les vecteurs de features audio.
+          Rapide, sans entraînement. Meilleure précision audio.
+          Retourne les 5 tracks dont le profil sonore est le plus proche.
+        </div>
+      </div>
+      <div class="model-intro-card">
+        <div class="model-intro-name">02 — KNN</div>
+        <div class="model-intro-title">K-Nearest Neighbors</div>
+        <div class="model-intro-desc">
+          Cherche les k voisins les plus proches dans l'espace des features.
+          Bonne diversité de genres. Entraîné sur l'ensemble du dataset.
+          Recommandations variées et précises.
+        </div>
+      </div>
+      <div class="model-intro-card">
+        <div class="model-intro-name">03 — K-Means</div>
+        <div class="model-intro-title">K-Means Clustering</div>
+        <div class="model-intro-desc">
+          Groupe les tracks en 50 clusters. Recommande dans le même cluster.
+          Plus rapide à l'inférence. Découverte de sons moins évidents.
+          Diversité explorée différemment.
+        </div>
+      </div>
+    </div>
+
+    <!-- Evaluation results -->
+    <div class="eval-section">
+      <div class="eval-title">// Résultats sur 8 chansons test</div>
+      <div class="eval-chart-grid">
+        <div class="chart-card">
+          <div class="chart-card-title">Performance comparée (normalisée 0-1)</div>
+          <canvas id="evalBarChart" height="200"></canvas>
+        </div>
+        <div>
+          <div class="eval-table-wrap">
+            <table class="eval-table">
+              <thead>
+                <tr>
+                  <th>Modèle</th>
+                  <th>Sim. moy.</th>
+                  <th>Diversité</th>
+                  <th>Overlap</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><span class="badge-model badge-cosine">Cosinus</span></td>
+                  <td class="val-green">0.977</td>
+                  <td class="val-muted">3.875</td>
+                  <td class="val-muted">3.625</td>
+                </tr>
+                <tr>
+                  <td><span class="badge-model badge-knn">KNN</span></td>
+                  <td class="val-green">0.975</td>
+                  <td class="val-green">4.750</td>
+                  <td class="val-muted">3.625</td>
+                </tr>
+                <tr>
+                  <td><span class="badge-model badge-kmeans">K-Means</span></td>
+                  <td class="val-muted">0.774</td>
+                  <td class="val-muted">1.250</td>
+                  <td class="val-muted">3.625</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="chart-card" style="margin-top: 16px;">
+            <div class="chart-card-title">Radar des performances</div>
+            <canvas id="modelRadarChart" height="180"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Conclusion -->
+    <div class="chart-card">
+      <div class="chart-card-title">// Conclusions</div>
+      <div style="display:grid; grid-template-columns: repeat(3,1fr); gap:16px; margin-top:8px;">
+        <div>
+          <div style="font-family:'JetBrains Mono',monospace; font-size:0.62rem; color:var(--green); letter-spacing:0.1em; text-transform:uppercase; margin-bottom:8px;">Cosinus retenu</div>
+          <div style="font-size:0.8rem; color:var(--muted2); line-height:1.6;">Meilleure précision audio (0.977). Recommandations très fidèles au son original. Utilisé par défaut.</div>
+        </div>
+        <div>
+          <div style="font-family:'JetBrains Mono',monospace; font-size:0.62rem; color:#64a0ff; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:8px;">KNN — diversité</div>
+          <div style="font-size:0.8rem; color:var(--muted2); line-height:1.6;">Meilleure diversité de genres (4.750). Idéal pour sortir de sa zone de confort musicale.</div>
+        </div>
+        <div>
+          <div style="font-family:'JetBrains Mono',monospace; font-size:0.62rem; color:#ffa03c; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:8px;">K-Means — exploration</div>
+          <div style="font-size:0.8rem; color:var(--muted2); line-height:1.6;">1660 tracks/cluster en moyenne. Explore des clusters entiers. Recommandations moins attendues.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════
+  SECTION CHAT IA
+═══════════════════════════════════ -->
+<section class="section" id="section-chat">
+  <div class="chat-page">
+    <div class="chat-header">
+      <div class="page-eyebrow">// Powered by Claude · Anthropic</div>
+      <h2 class="page-title" style="font-size:2rem; margin-bottom:8px;">Chat Musical IA</h2>
+      <p style="font-family:'JetBrains Mono',monospace; font-size:0.72rem; color:var(--muted2);">
+        Décris tes goûts musicaux et obtiens des recommandations personnalisées.
+        Clique sur un titre suggéré pour le rechercher dans notre dataset.
+      </p>
+    </div>
+
+    <div class="chat-messages" id="chatMessages">
+      <!-- Welcome message -->
+      <div class="msg ai">
+        <div class="msg-avatar">♫</div>
+        <div class="msg-bubble">
+          Salut ! Je suis ton assistant musical. 🎵<br><br>
+          Dis-moi quels genres tu aimes, tes artistes favoris, ou l'ambiance que tu recherches — je vais te suggérer des sons à découvrir.<br><br>
+          <em style="color:var(--muted2); font-size:0.82rem;">Les titres entre guillemets verts sont cliquables → ils seront recherchés dans notre dataset de 81K tracks.</em>
+        </div>
+      </div>
+    </div>
+
+    <div class="chat-input-area">
+      <div class="chat-input-row">
+        <textarea class="chat-input" id="chatInput" rows="2"
+          placeholder="Ex: J'adore The Weeknd et Drake, j'aime les sons électroniques et mélancoliques..."
+        ></textarea>
+        <button class="btn-send" id="btnSend" onclick="sendChat()">↑ Envoyer</button>
+      </div>
+      <div class="chat-hint">
+        Essaye : "J'aime la pop électronique comme Dua Lipa" · "Sons pour travailler, calmes et instrumentaux" · "Rap français énergique"
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+const API = 'http://127.0.0.1:5001';
+let selectedModel = 'cosine';
+let sessionHistory = []; // { track, features, genre }
+let lastTrack = null;
+let radarChartInstance = null;
+let evalBarChartInstance = null;
+let modelRadarChartInstance = null;
+let chatHistory = [];
+
+// ── NAVIGATION ──
+function showSection(name) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('section-' + name).classList.add('active');
+  event.target.classList.add('active');
+
+  if (name === 'models' && !evalBarChartInstance) {
+    setTimeout(initModelCharts, 100);
+  }
+}
+
+// ── ENTER KEY ──
+document.getElementById('searchInput').addEventListener('keydown', e => {
+  // Enter géré par onSearchKeydown() quand l'autocomplete est ouvert
+  const list = document.getElementById('autocompleteList');
+  if (e.key === 'Enter' && !list.classList.contains('open')) doSearch();
+});
+document.getElementById('chatInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); }
+});
+
+// ── LOAD GENRES ──
+async function loadGenres() {
+  try {
+    const res = await fetch(`${API}/genres`);
+    const data = await res.json();
+    const sel = document.getElementById('genreSelect');
+    data.genres.forEach(g => {
+      const opt = document.createElement('option');
+      opt.value = g; opt.textContent = g;
+      sel.appendChild(opt);
+    });
+  } catch(e) { console.log('API offline – genres not loaded'); }
+}
+
+async function loadArtists() {
+  const genre = document.getElementById('genreSelect').value;
+  const sel = document.getElementById('artistSelect');
+  sel.innerHTML = '<option value="">👤 Tous les artistes</option>';
+  if (!genre) return;
+  try {
+    const res = await fetch(`${API}/artists?genre=${encodeURIComponent(genre)}`);
+    const data = await res.json();
+    data.artists.forEach(a => {
+      const opt = document.createElement('option');
+      opt.value = a; opt.textContent = a;
+      sel.appendChild(opt);
+    });
+  } catch(e) {}
+  // Reset track selectbox quand le genre change
+  resetTrackSelect();
+}
+
+async function loadTracks() {
+  const artist = document.getElementById('artistSelect').value;
+  const genre = document.getElementById('genreSelect').value;
+
+  if (!artist) {
+    // Pas d'artiste → on revient à l'input texte
+    resetTrackSelect();
+    return;
+  }
+
+  try {
+    const res = await fetch(`${API}/tracks?artist=${encodeURIComponent(artist)}&genre=${encodeURIComponent(genre)}`);
+    const data = await res.json();
+
+    const trackSel = document.getElementById('trackSelect');
+    trackSel.innerHTML = '<option value="">🎵 Choisir une chanson...</option>';
+    data.tracks.forEach(t => {
+      const opt = document.createElement('option');
+      opt.value = t; opt.textContent = t;
+      trackSel.appendChild(opt);
+    });
+
+    // Masquer l'input texte + bouton, afficher la selectbox
+    document.getElementById('searchInput').closest('.search-row').classList.add('hidden');
+    document.getElementById('trackSelectRow').classList.remove('hidden');
+
+  } catch(e) {}
+}
+
+function pickTrack() {
+  const track = document.getElementById('trackSelect').value;
+  if (!track) return;
+  // On met à jour l'input (utilisé par doSearch) puis on lance la recherche
+  document.getElementById('searchInput').value = track;
+  doSearch();
+}
+
+function resetTrackSelect() {
+  // Revenir à l'input texte
+  document.getElementById('trackSelect').innerHTML = '<option value="">🎵 Choisir une chanson...</option>';
+  document.getElementById('trackSelectRow').classList.add('hidden');
+  document.getElementById('searchInput').closest('.search-row').classList.remove('hidden');
+}
+
+// ── MODEL SELECTOR ──
+function pickModel(btn) {
+  document.querySelectorAll('.model-pill').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const newModel = btn.dataset.model;
+
+  if (newModel !== selectedModel) {
+    selectedModel = newModel;
+    sessionHistory = [];
+    updateScore();
+    if (lastTrack) doSearch();
+  }
+}
+
+// ── SEARCH ──
+async function doSearch() {
+  const track = document.getElementById('searchInput').value.trim();
+  if (!track) return;
+
+  lastTrack = track;
+  showLoading();
+  hideCompare();
+
+  try {
+    const artist = document.getElementById('artistSelect').value;
+    let url = `${API}/recommend?track=${encodeURIComponent(track)}&model=${selectedModel}`;
+    if (artist) url += `&artist=${encodeURIComponent(artist)}`;
+
+    const res = await fetch(url);
+    const data = await res.json();
+
+    if (data.error) { showError(`"${track}" introuvable dans le dataset.`); return; }
+
+    // Add to session
+    const existing = sessionHistory.find(h => h.track.toLowerCase() === track.toLowerCase());
+    if (!existing) {
+      sessionHistory.push({ track, features: null, genre: '' });
+      // Fetch features async for session score
+      fetchFeaturesForSession(track, sessionHistory.length - 1);
+    }
+
+    await renderResults(track, data.tracks, data.model);
+    document.getElementById('btnCompare').classList.remove('hidden');
+
+  } catch(e) {
+    showError('Impossible de contacter l\'API Flask. Lance : python api.py');
+  }
+}
+
+async function fetchFeaturesForSession(track, idx) {
+  try {
+    const res = await fetch(`${API}/features?track=${encodeURIComponent(track)}`);
+    const data = await res.json();
+    if (data.features && sessionHistory[idx]) {
+      sessionHistory[idx].features = data.features;
+      sessionHistory[idx].genre = data.genre || '';
+    }
+    if (sessionHistory.length >= 2) updateScore();
+  } catch(e) {}
+}
+
+async function renderResults(track, tracks, model) {
+  // Model tag
+  const modelNames = { cosine: 'Similarité Cosinus', knn: 'K-Nearest Neighbors', kmeans: 'K-Means Clustering' };
+  document.getElementById('modelTag').textContent = modelNames[model] || model;
+  document.getElementById('resultsTitle').textContent = `// Recommandations pour "${track}"`;
+
+  // Input card
+  document.getElementById('inputName').textContent = track;
+  document.getElementById('inputArtist').textContent = tracks.length > 0 ? '' : '—';
+
+  // Fetch Spotify info for input track
+  try {
+    const spRes = await fetch(`${API}/spotify_info?track=${encodeURIComponent(track)}`);
+    const spData = await spRes.json();
+    if (spData.image) {
+      const cover = document.getElementById('inputCover');
+      cover.innerHTML = `<img src="${spData.image}" alt="cover" loading="lazy">`;
+    }
+    if (spData.url) {
+      document.getElementById('inputSpLink').href = spData.url;
+    }
+    // Try to get artist from first track
+    if (tracks.length > 0) {
+      document.getElementById('inputArtist').textContent = '';
+    }
+  } catch(e) {}
+
+  // Fetch features for radar
+  try {
+    const fRes = await fetch(`${API}/features?track=${encodeURIComponent(track)}`);
+    const fData = await fRes.json();
+    if (fData.features) renderRadar(track, fData.features);
+  } catch(e) {}
+
+  // Render track list
+  const list = document.getElementById('trackList');
+  list.innerHTML = '';
+
+  for (let i = 0; i < tracks.length; i++) {
+    const t = tracks[i];
+    const delay = i * 0.07;
+    const spotifyUrl = `https://open.spotify.com/search/${encodeURIComponent(t.track_name + ' ' + t.artists)}`;
+
+    const row = document.createElement('div');
+    row.className = 'track-row';
+    row.style.animationDelay = `${delay}s`;
+    row.innerHTML = `
+      <div class="track-num">${String(i+1).padStart(2,'0')}</div>
+      <div class="track-cover" id="cover-${i}"><div class="cover-ph">♫</div></div>
+      <div class="track-info">
+        <div class="track-name">${t.track_name}</div>
+        <div class="track-artist">${t.artists}</div>
+      </div>
+      <div class="track-sp">
+        <a href="${spotifyUrl}" target="_blank" class="sp-link">↗ Spotify</a>
+      </div>
+    `;
+    list.appendChild(row);
+
+    // Fetch cover async
+    fetchCover(t.track_name, t.artists, `cover-${i}`);
+  }
+
+  hideLoading();
+  document.getElementById('resultsContent').classList.remove('hidden');
+  document.getElementById('stateEmpty').classList.add('hidden');
+}
+
+async function fetchCover(track, artist, coverId) {
+  try {
+    const res = await fetch(`${API}/spotify_info?track=${encodeURIComponent(track)}&artist=${encodeURIComponent(artist)}`);
+    const data = await res.json();
+    if (data.image) {
+      const el = document.getElementById(coverId);
+      if (el) el.innerHTML = `<img src="${data.image}" alt="cover" loading="lazy">`;
+    }
+  } catch(e) {}
+}
+
+// ── RADAR CHART ──
+function renderRadar(track, features) {
+  document.getElementById('radarTrackName').textContent = track;
+
+  const labels = ['Danceability', 'Energy', 'Loudness', 'Speechiness', 'Acousticness', 'Instrumentalness', 'Valence'];
+  const keys = ['danceability', 'energy', 'loudness', 'speechiness', 'acousticness', 'instrumentalness', 'valence'];
+
+  // Sigmoid normalization for display
+  const sigmoid = x => 1 / (1 + Math.exp(-x));
+  const values = keys.map(k => Math.round(sigmoid(features[k] || 0) * 100) / 100);
+
+  if (radarChartInstance) radarChartInstance.destroy();
+
+  const ctx = document.getElementById('radarChart').getContext('2d');
+  radarChartInstance = new Chart(ctx, {
+    type: 'radar',
+    data: {
+      labels,
+      datasets: [{
+        label: track,
+        data: values,
+        backgroundColor: 'rgba(29,185,84,0.15)',
+        borderColor: '#1DB954',
+        pointBackgroundColor: '#1DB954',
+        pointBorderColor: '#0a0a0a',
+        pointRadius: 4,
+        borderWidth: 2,
+      }]
+    },
+    options: {
+      scales: {
+        r: {
+          min: 0, max: 1,
+          ticks: { display: false, stepSize: 0.25 },
+          grid: { color: 'rgba(255,255,255,0.06)' },
+          angleLines: { color: 'rgba(255,255,255,0.06)' },
+          pointLabels: {
+            color: '#888', font: { family: 'JetBrains Mono', size: 10 }
+          }
+        }
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#161616', borderColor: '#222', borderWidth: 1,
+          titleFont: { family: 'JetBrains Mono' },
+          bodyFont: { family: 'JetBrains Mono' },
+          callbacks: {
+            label: ctx => ` ${ctx.label}: ${Math.round(ctx.raw * 100)}%`
+          }
+        }
+      },
+      animation: { duration: 600, easing: 'easeInOutQuart' }
+    }
+  });
+}
+
+// ── COMPARE ──
+async function doCompare() {
+  if (!lastTrack) return;
+  document.getElementById('compareSection').classList.remove('hidden');
+
+  const models = ['cosine', 'knn', 'kmeans'];
+  const names = ['Cosinus', 'KNN', 'K-Means'];
+  const grid = document.getElementById('compareGrid');
+  grid.innerHTML = models.map(m =>
+    `<div class="compare-col">
+      <div class="compare-col-head">${names[models.indexOf(m)]}</div>
+      <div class="loading-wrap" style="padding:16px 0"><div class="spinner"></div> Chargement...</div>
+    </div>`
+  ).join('');
+
+  for (let i = 0; i < models.length; i++) {
+    try {
+      const res = await fetch(`${API}/recommend?track=${encodeURIComponent(lastTrack)}&model=${models[i]}`);
+      const data = await res.json();
+      const col = grid.children[i];
+      col.innerHTML = `<div class="compare-col-head">${names[i]}</div>`;
+      if (data.tracks) {
+        data.tracks.forEach(t => {
+          const d = document.createElement('div');
+          d.className = 'compare-track';
+          d.innerHTML = `<div class="compare-track-name">${t.track_name}</div><div class="compare-track-artist">${t.artists}</div>`;
+          col.appendChild(d);
+        });
+      }
+    } catch(e) {}
+  }
+}
+
+function hideCompare() {
+  document.getElementById('compareSection').classList.add('hidden');
+  document.getElementById('compareGrid').innerHTML = '';
+}
+
+// ── SESSION SCORE ──
+function updateScore() {
+  const n = sessionHistory.length;
+  if (n < 2) {
+    document.getElementById('scoreWrap').classList.add('hidden');
+    return;
+  }
+
+  document.getElementById('scoreWrap').classList.remove('hidden');
+
+  const withFeatures = sessionHistory.filter(h => h.features);
+  if (withFeatures.length < 2) {
+    document.getElementById('scoreTotal').textContent = '—';
+    return;
+  }
+
+  // Diversité genres
+  const genres = [...new Set(sessionHistory.map(h => h.genre).filter(Boolean))];
+  const diversiteScore = Math.min(100, genres.length * 15 + (n * 5));
+
+  // Équilibre (valence mean, using sigmoid values)
+  const sigmoid = x => 1 / (1 + Math.exp(-x));
+  const valences = withFeatures.map(h => sigmoid(h.features.valence || 0));
+  const valenceMean = valences.reduce((a,b) => a+b, 0) / valences.length;
+  const equilibreScore = Math.round(100 - Math.abs(valenceMean - 0.5) * 200);
+
+  // Variété énergie
+  const energies = withFeatures.map(h => sigmoid(h.features.energy || 0));
+  const energyMean = energies.reduce((a,b) => a+b, 0) / energies.length;
+  const energyVariance = energies.reduce((s,v) => s + Math.pow(v - energyMean, 2), 0) / energies.length;
+  const varieteScore = Math.min(100, Math.round(Math.sqrt(energyVariance) * 400));
+
+  const total = Math.round(diversiteScore * 0.40 + equilibreScore * 0.35 + varieteScore * 0.25);
+
+  document.getElementById('scoreTotal').textContent = total;
+  document.getElementById('scoreDiversite').textContent = diversiteScore;
+  document.getElementById('scoreEquilibre').textContent = Math.max(0, equilibreScore);
+  document.getElementById('scoreVariete').textContent = varieteScore;
+}
+
+function resetSession() {
+  sessionHistory = [];
+  document.getElementById('scoreWrap').classList.add('hidden');
+}
+
+// ── MODELS CHARTS ──
+function initModelCharts() {
+  // Bar chart
+  const barCtx = document.getElementById('evalBarChart').getContext('2d');
+  evalBarChartInstance = new Chart(barCtx, {
+    type: 'bar',
+    data: {
+      labels: ['Sim. moyenne', 'Diversité genres', 'Overlap'],
+      datasets: [
+        {
+          label: 'Cosinus',
+          data: [1.0, 0.74, 1.0],
+          backgroundColor: 'rgba(29,185,84,0.7)',
+          borderColor: '#1DB954', borderWidth: 1, borderRadius: 4,
+        },
+        {
+          label: 'KNN',
+          data: [0.997, 1.0, 1.0],
+          backgroundColor: 'rgba(100,160,255,0.7)',
+          borderColor: '#64a0ff', borderWidth: 1, borderRadius: 4,
+        },
+        {
+          label: 'K-Means',
+          data: [0.0, 0.0, 1.0],
+          backgroundColor: 'rgba(255,160,60,0.7)',
+          borderColor: '#ffa03c', borderWidth: 1, borderRadius: 4,
+        },
+      ]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        y: {
+          min: 0, max: 1.1,
+          grid: { color: 'rgba(255,255,255,0.05)' },
+          ticks: { color: '#555', font: { family: 'JetBrains Mono', size: 10 } }
+        },
+        x: {
+          grid: { display: false },
+          ticks: { color: '#888', font: { family: 'JetBrains Mono', size: 10 } }
+        }
+      },
+      plugins: {
+        legend: {
+          labels: { color: '#888', font: { family: 'JetBrains Mono', size: 10 }, boxWidth: 12, padding: 16 }
+        },
+        tooltip: {
+          backgroundColor: '#161616', borderColor: '#222', borderWidth: 1,
+          titleFont: { family: 'JetBrains Mono' }, bodyFont: { family: 'JetBrains Mono' },
+        }
+      }
+    }
+  });
+
+  // Model radar
+  const rCtx = document.getElementById('modelRadarChart').getContext('2d');
+  modelRadarChartInstance = new Chart(rCtx, {
+    type: 'radar',
+    data: {
+      labels: ['Précision', 'Diversité', 'Vitesse', 'Fiabilité'],
+      datasets: [
+        {
+          label: 'Cosinus',
+          data: [1.0, 0.74, 1.0, 0.95],
+          backgroundColor: 'rgba(29,185,84,0.1)',
+          borderColor: '#1DB954', pointBackgroundColor: '#1DB954', borderWidth: 2, pointRadius: 3,
+        },
+        {
+          label: 'KNN',
+          data: [0.997, 1.0, 0.7, 0.9],
+          backgroundColor: 'rgba(100,160,255,0.1)',
+          borderColor: '#64a0ff', pointBackgroundColor: '#64a0ff', borderWidth: 2, pointRadius: 3,
+        },
+        {
+          label: 'K-Means',
+          data: [0.3, 0.3, 0.85, 0.6],
+          backgroundColor: 'rgba(255,160,60,0.1)',
+          borderColor: '#ffa03c', pointBackgroundColor: '#ffa03c', borderWidth: 2, pointRadius: 3,
+        },
+      ]
+    },
+    options: {
+      scales: {
+        r: {
+          min: 0, max: 1,
+          ticks: { display: false },
+          grid: { color: 'rgba(255,255,255,0.06)' },
+          angleLines: { color: 'rgba(255,255,255,0.06)' },
+          pointLabels: { color: '#888', font: { family: 'JetBrains Mono', size: 9 } }
+        }
+      },
+      plugins: {
+        legend: {
+          labels: { color: '#888', font: { family: 'JetBrains Mono', size: 9 }, boxWidth: 10, padding: 12 }
+        }
+      }
+    }
+  });
+}
+
+// ── CHAT IA ──
+async function sendChat() {
+  const input = document.getElementById('chatInput');
+  const msg = input.value.trim();
+  if (!msg) return;
+
+  input.value = '';
+  document.getElementById('btnSend').disabled = true;
+
+  addMsg('user', msg);
+  chatHistory.push({ role: 'user', content: msg });
+
+  // Typing indicator
+  const typingId = 'typing-' + Date.now();
+  addMsg('ai', '<div class="typing-dots"><span></span><span></span><span></span></div>', typingId);
+
+  try {
+    const response = await fetch(`${API}/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        system: `Tu es MusicBot, un expert musical passionné qui aide les utilisateurs à découvrir de nouveaux sons. 
+Tu as accès à une base de données de 81,343 tracks Spotify couvrant 113 genres (pop, rap, rock, jazz, électro, afrobeat, reggaeton, k-pop, etc.).
+Quand tu recommandes des chansons spécifiques, mets le titre entre guillemets doubles et l'artiste après un tiret comme ça exactement : "Titre de la chanson" - Artiste
+Recommande toujours entre 3 et 5 chansons quand tu proposes des titres.
+Sois passionné, chaleureux, et personnalise tes recommandations aux goûts décrits.
+Si l'utilisateur parle en français, réponds en français.`,
+        messages: chatHistory
+      })
+    });
+
+    const data = await response.json();
+    const text = data.content?.[0]?.text || 'Désolé, je n\'ai pas pu générer une réponse.';
+
+    // Remove typing
+    const typingEl = document.getElementById(typingId);
+    if (typingEl) typingEl.closest('.msg').remove();
+
+    chatHistory.push({ role: 'assistant', content: text });
+
+    // Parse song recommendations
+    const parsed = parseSongLinks(text);
+    addMsg('ai', parsed);
+
+  } catch(e) {
+    const typingEl = document.getElementById(typingId);
+    if (typingEl) typingEl.closest('.msg').remove();
+    addMsg('ai', 'Erreur de connexion à l\'API Claude. Vérifie ta connexion.');
+  }
+
+  document.getElementById('btnSend').disabled = false;
+}
+
+function parseSongLinks(text) {
+  // Convert "Track Name" - Artist to clickable links
+  const html = text.replace(/"([^"]+)"\s*[-–]\s*([^\n,\.!?]+)/g, (match, title, artist) => {
+    const cleanArtist = artist.trim();
+    const cleanTitle = title.trim();
+    return `<a class="song-link" onclick="searchFromChat('${cleanTitle.replace(/'/g, "\\'")}', '${cleanArtist.replace(/'/g, "\\'")}')">🎵 "${cleanTitle}" - ${cleanArtist}</a>`;
+  });
+  return html.replace(/\n/g, '<br>');
+}
+
+function searchFromChat(title, artist) {
+  // Switch to home tab and search
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('section-home').classList.add('active');
+  document.querySelector('.nav-tab').classList.add('active');
+
+  document.getElementById('searchInput').value = title;
+  doSearch();
+}
+
+function addMsg(role, content, id) {
+  const container = document.getElementById('chatMessages');
+  const msg = document.createElement('div');
+  msg.className = `msg ${role}`;
+  if (id) msg.id = id;
+  const icon = role === 'ai' ? '♫' : '♪';
+  msg.innerHTML = `
+    <div class="msg-avatar">${icon}</div>
+    <div class="msg-bubble">${content}</div>
+  `;
+  container.appendChild(msg);
+  container.scrollTop = container.scrollHeight;
+}
+
+// ── UTILS ──
+function showLoading() {
+  document.getElementById('stateLoading').classList.remove('hidden');
+  document.getElementById('stateError').classList.add('hidden');
+  document.getElementById('stateEmpty').classList.add('hidden');
+  document.getElementById('resultsContent').classList.add('hidden');
+  document.getElementById('scoreWrap').classList.add('hidden');
+}
+
+function hideLoading() {
+  document.getElementById('stateLoading').classList.add('hidden');
+}
+
+function showError(msg) {
+  hideLoading();
+  const err = document.getElementById('stateError');
+  err.textContent = '⚠ ' + msg;
+  err.classList.remove('hidden');
+}
+
+// ── AUTOCOMPLETE ──
+let acDebounce = null;
+let acSelected = -1;
+let acResults = [];
+
+function onSearchInput() {
+  const q = document.getElementById('searchInput').value.trim();
+  clearTimeout(acDebounce);
+  if (q.length < 2) { closeAutocomplete(); return; }
+  // Attendre 250ms après la dernière frappe avant d'appeler Flask
+  acDebounce = setTimeout(() => fetchSuggestions(q), 250);
+}
+
+async function fetchSuggestions(q) {
+  try {
+    const res = await fetch(`${API}/search?q=${encodeURIComponent(q)}`);
+    const data = await res.json();
+    acResults = data.results || [];
+    renderAutocomplete(q, acResults);
+  } catch(e) {
+    closeAutocomplete();
+  }
+}
+
+function renderAutocomplete(q, results) {
+  const list = document.getElementById('autocompleteList');
+  if (results.length === 0) { closeAutocomplete(); return; }
+
+  // Surligner la partie tapée dans le nom de la track
+  const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const regex = new RegExp(`(${escaped})`, 'gi');
+
+  list.innerHTML = results.map((r, i) => {
+    const highlighted = r.track_name.replace(regex, '<span class="ac-highlight">$1</span>');
+    return `
+      <div class="autocomplete-item" data-idx="${i}"
+        onmousedown="pickSuggestion(${i})"
+        onmouseover="acSelected=${i}; highlightItem()">
+        <div class="ac-track">${highlighted}</div>
+        <div class="ac-artist">${r.artists}</div>
+      </div>`;
+  }).join('');
+
+  acSelected = -1;
+  list.classList.add('open');
+}
+
+function pickSuggestion(idx) {
+  const r = acResults[idx];
+  if (!r) return;
+  document.getElementById('searchInput').value = r.track_name;
+  closeAutocomplete();
+  doSearch();
+}
+
+function closeAutocomplete() {
+  document.getElementById('autocompleteList').classList.remove('open');
+  acSelected = -1;
+}
+
+function highlightItem() {
+  document.querySelectorAll('.autocomplete-item').forEach((el, i) => {
+    el.style.background = i === acSelected ? 'rgba(29,185,84,0.08)' : '';
+  });
+}
+
+// Navigation clavier : ↑ ↓ pour naviguer, Entrée pour valider, Échap pour fermer
+function onSearchKeydown(e) {
+  const list = document.getElementById('autocompleteList');
+  if (!list.classList.contains('open')) return;
+
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    acSelected = Math.min(acSelected + 1, acResults.length - 1);
+    highlightItem();
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    acSelected = Math.max(acSelected - 1, 0);
+    highlightItem();
+  } else if (e.key === 'Enter') {
+    e.preventDefault();
+    if (acSelected >= 0) {
+      pickSuggestion(acSelected);
+    } else {
+      closeAutocomplete();
+      doSearch();
+    }
+  } else if (e.key === 'Escape') {
+    closeAutocomplete();
+  }
+}
+
+// Fermer l'autocomplete si clic en dehors
+document.addEventListener('click', e => {
+  if (!e.target.closest('.search-wrapper')) closeAutocomplete();
+});
+
+// ── INIT ──
+loadGenres();
+</script>
+
+</body>
+</html>
