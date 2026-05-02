@@ -3,6 +3,34 @@ import streamlit as st
 import plotly.graph_objects as go
 from spotify_api import get_track_info, get_token
 
+def calculer_score_musical(historique):
+    if len(historique) < 2:
+        return None
+    
+    import pandas as pd
+    df_hist = pd.DataFrame(historique)
+    
+    # Diversité des genres
+    genres_uniques = df_hist['track_genre'].nunique() if 'track_genre' in df_hist else 1
+    diversite_score = min(100, genres_uniques * 15)
+    
+    # Équilibre émotionnel
+    valence_moy = df_hist['valence'].mean()
+    equilibre_score = int(100 - abs(valence_moy - 0.5) * 200)
+    
+    # Variété d'énergie
+    energie_std = df_hist['energy'].std()
+    variete_score = min(100, int(energie_std * 200))
+    
+    score_total = round(diversite_score * 0.40 + equilibre_score * 0.35 + variete_score * 0.25)
+    
+    return {
+        "total": score_total,
+        "diversite": diversite_score,
+        "equilibre": equilibre_score,
+        "variete": variete_score
+    }
+
 token = get_token()
 
 st.title("Music Recommender") #Titre de la page
@@ -46,6 +74,8 @@ else:
 autocomplete = st.selectbox("Tape le nom d'une chanson", options) #Propose des choix à l'utilsateur (valeur initiale nulle)
 track_name = autocomplete.split(" - ")[0] 
 
+if "historique" not in st.session_state:
+    st.session_state.historique = []
 if track_name : #Vérifier si le son saisit n'est pas nul
     result = recommend(track_name) 
     if result is None:
@@ -53,6 +83,8 @@ if track_name : #Vérifier si le son saisit n'est pas nul
     else:
         results, scores = result
         track_data = df[df['track_name'].str.lower() == track_name.lower()].iloc[0]
+        if track_name not in [t['track_name'] for t in st.session_state.historique]:
+            st.session_state.historique.append(track_data.to_dict())
         info_entree = get_track_info(token, track_name, track_data['artists'])
         if info_entree:
             col1, col2 = st.columns([1, 4])
@@ -79,6 +111,16 @@ if track_name : #Vérifier si le son saisit n'est pas nul
     ))
 
     st.plotly_chart(fig)
+
+    if len(st.session_state.historique) >= 2:
+        score = calculer_score_musical(st.session_state.historique)
+        st.markdown("---")
+        st.markdown("### 🎵 Score de ta session")
+        col1, col2, col3, col4 = st.columns(4)
+        col1.metric("Score Global", f"{score['total']}/100")
+        col2.metric("🌈 Diversité", f"{score['diversite']}%")
+        col3.metric("⚖️ Équilibre", f"{score['equilibre']}%")
+        col4.metric("⚡ Variété", f"{score['variete']}%")
 
 
    
