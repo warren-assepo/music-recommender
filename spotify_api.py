@@ -6,7 +6,7 @@ from requests import post, get
 from dotenv import load_dotenv
 from pathlib import Path
 
-load_dotenv(dotenv_path=Path(__file__).parent / ".env")
+load_dotenv()
 
 
 client_id = os.getenv("SPOTIFY_CLIENT_ID")
@@ -30,7 +30,7 @@ def get_token(): #Accès temporaire à l'api de de Spotify
 token = get_token()
 print(token)
 
-def get_track_info(token, track_name, artist_name): #Prendre les informations de chaque chansons
+def get_track_info(token, track_name, artist_name): #Prendre les informations de chaque chansons (lien et l'image du titre)
     url = "https://api.spotify.com/v1/search"
     headers = {"Authorization": "Bearer " + token}
     query = f"?q={track_name} {artist_name}&type=track&limit=1"
