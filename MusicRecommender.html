@@ -541,13 +541,53 @@ nav {
 }
 
 @media (max-width: 768px) {
-  nav { padding: 0 20px; }
+  /* NAV */
+  nav { padding: 0 16px; gap: 8px; }
+  .nav-logo { font-size: 0.8rem; flex-shrink: 0; }
+  .nav-tabs {
+    overflow-x: auto; -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; flex: 1;
+  }
+  .nav-tabs::-webkit-scrollbar { display: none; }
+  .nav-tab { font-size: 0.6rem; padding: 6px 12px; white-space: nowrap; }
   .nav-kpis { display: none; }
-  .hero, .results-wrap, .models-page { padding-left: 20px; padding-right: 20px; }
+
+  /* HERO & LAYOUT */
+  .hero { padding: 40px 16px 32px; }
+  .results-wrap { padding: 0 16px 60px; }
+  .models-page { padding: 40px 16px 60px; }
+
+  /* SEARCH ROW — input + bouton en colonne */
+  .search-row { flex-direction: column; gap: 8px; }
+  .search-wrapper { width: 100%; }
+  .btn-search { width: 100%; text-align: center; }
+
+  /* FILTER ROW */
   .filter-row { grid-template-columns: 1fr; }
+
+  /* SCORE */
   .score-grid { grid-template-columns: repeat(2, 1fr); }
-  .compare-grid, .models-intro-grid, .eval-chart-grid { grid-template-columns: 1fr; }
-  .chat-page { padding: 32px 20px 0; }
+
+  /* GRIDS */
+  .compare-grid, .models-intro-grid { grid-template-columns: 1fr; }
+  .eval-chart-grid { grid-template-columns: 1fr; }
+
+  /* CONCLUSIONS — 3 colonnes → 1 colonne */
+  .chart-card > div[style*="grid-template-columns: repeat(3"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* CHAT PAGE */
+  .chat-page {
+    padding: 20px 16px 0;
+    height: calc(100vh - var(--nav-h));
+  }
+  .chat-header { margin-bottom: 16px; }
+  .chat-header .page-title { font-size: 1.4rem !important; }
+  .chat-header p { font-size: 0.65rem !important; }
+  .msg-bubble { max-width: 90%; font-size: 0.82rem; padding: 10px 14px; }
+  .chat-input-area { padding: 12px 0 20px; }
+  .chat-hint { display: none; }
 }
 </style>
 </head>
@@ -869,7 +909,7 @@ nav {
 </section>
 
 <script>
-const API = 'https://music-recommender-e6la.onrender.com';
+const API = 'http://127.0.0.1:5001';
 let selectedModel = 'cosine';
 let sessionHistory = []; // { track, features, genre }
 let lastTrack = null;
@@ -1388,6 +1428,16 @@ Si l'utilisateur parle en français, réponds en français.`,
     });
 
     const data = await response.json();
+
+    // Gestion d'erreur Anthropic (clé manquante, rate limit, etc.)
+    if (data.error) {
+      const typingEl = document.getElementById(typingId);
+      if (typingEl) typingEl.closest('.msg').remove();
+      addMsg('ai', `⚠ Erreur API : ${data.error.message || JSON.stringify(data.error)}`);
+      document.getElementById('btnSend').disabled = false;
+      return;
+    }
+
     const text = data.content?.[0]?.text || 'Désolé, je n\'ai pas pu générer une réponse.';
 
     // Remove typing
