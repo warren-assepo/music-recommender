@@ -958,6 +958,7 @@ async function loadArtists() {
   const genre = document.getElementById('genreSelect').value;
   const sel = document.getElementById('artistSelect');
   sel.innerHTML = '<option value="">👤 Tous les artistes</option>';
+  resetTrackSelect();
   if (!genre) return;
   try {
     const res = await fetch(`${API}/artists?genre=${encodeURIComponent(genre)}`);
@@ -969,7 +970,6 @@ async function loadArtists() {
     });
   } catch(e) {}
   // Reset track selectbox quand le genre change
-  resetTrackSelect();
 }
 
 async function loadTracks() {
@@ -1469,29 +1469,31 @@ function parseSongLinks(text) {
   return html.replace(/\n/g, '<br>');
 }
 
-function searchFromChat(title, artist) {
-  // Switch to home tab and search
-  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-  document.getElementById('section-home').classList.add('active');
-  document.querySelector('.nav-tab').classList.add('active');
+async function searchFromChat(title, artist) {
+  // Cherche d'abord si le titre existe dans le dataset
+  try {
+    const res = await fetch(`${API}/search?q=${encodeURIComponent(title)}`);
+    const data = await res.json();
 
-  document.getElementById('searchInput').value = title;
-  doSearch();
-}
+    if (data.results && data.results.length > 0) {
+      // Trouve le meilleur match (priorité au titre exact)
+      const exact = data.results.find(r => r.track_name.toLowerCase() === title.toLowerCase());
+      const match = exact || data.results[0];
 
-function addMsg(role, content, id) {
-  const container = document.getElementById('chatMessages');
-  const msg = document.createElement('div');
-  msg.className = `msg ${role}`;
-  if (id) msg.id = id;
-  const icon = role === 'ai' ? '♫' : '♪';
-  msg.innerHTML = `
-    <div class="msg-avatar">${icon}</div>
-    <div class="msg-bubble">${content}</div>
-  `;
-  container.appendChild(msg);
-  container.scrollTop = container.scrollHeight;
+      // Bascule sur l'accueil et lance la recherche avec le bon titre
+      document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+      document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+      document.getElementById('section-home').classList.add('active');
+      document.querySelector('.nav-tab').classList.add('active');
+      document.getElementById('searchInput').value = match.track_name;
+      doSearch();
+    } else {
+      // Titre introuvable — on le signale dans le chat
+      addMsg('ai', `⚠️ "<strong>${title}</strong>" n'est pas dans notre dataset de 81K tracks. Essaie un autre titre ou reformule ta demande.`);
+    }
+  } catch(e) {
+    addMsg('ai', 'Erreur lors de la recherche dans le dataset.');
+  }
 }
 
 // ── UTILS ──
